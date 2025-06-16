@@ -3,7 +3,7 @@ FROM golang:1.22 AS builder
 
 WORKDIR /app
 
-COPY backend/go.mod backend/go.sum ./backend/
+COPY backend/go.mod ./backend/
 RUN cd backend && go mod download
 
 COPY backend/ ./backend/
