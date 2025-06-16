@@ -1,0 +1,63 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RideSync</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="shortcut icon" href="static/assets/logo.svg" type="image/svg">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="static/css/main.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+    <div id="floating-notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg font-semibold opacity-0 pointer-events-none z-[9999] hidden"></div>
+
+    <!-- Notification Bell + Log -->
+    <div id="notification-bell" class="absolute top-4 right-4 cursor-pointer z-[9998]">
+        <img src="static/assets/notif.svg" alt="Notifications" class="w-6 h-6">
+    </div>
+
+    <div class="absolute top-12 right-4 font-sans z-[9998]">
+        <div id="notification-log" class="bg-white border border-gray-300 rounded-lg mt-2 p-3 w-64 max-h-72 overflow-y-auto shadow-md hidden">
+            <h4 class="text-base font-semibold mb-2">Notifications</h4>
+            <ul id="notification-list" class="text-sm"></ul>
+        </div>
+    </div>
+
+   <div id="hamburger" class="hamburger-btn absolute top-[10px] left-[330px] z-[10001] w-[34px] h-[34px] bg-white text-gray-900 rounded-lg cursor-pointer hover:bg-gray-200">
+        <svg class = "absolute hamburger top-[5px] left-[5px]" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false">
+            <path d="M21 6H3V5h18v1zm0 5H3v1h18v-1zm0 6H3v1h18v-1z" />
+        </svg>
+    </div>
+
+    <div id="side-panel" class="absolute top-0 left-0 w-[376px] h-full bg-white p-4 overflow-y-auto z-[10000]">
+        <img src="static/assets/logo.svg" alt="Logo" class="h-6 w-6 ">
+        <div class="flex flex-col mb-4 space-y-2">
+            <button class="btn bg-black text-white rounded px-4 py-2 hover:bg-gray-200 hover:text-black mt-[40px]" id="customerping">Node Request</button>
+            <button class="btn bg-black text-white rounded px-4 py-2 hover:bg-gray-200 hover:text-black" id="acceptcustomer">Accept Node</button>
+
+            <div id="queue">
+                <ul id="queue-list"  class="list-none pl-0 mt-2 max-h-[325px] overflow-y-auto">    </ul>
+            </div>
+       
+        </div>
+        <div class="section">
+            <h4 class="font-semibold text-sm mb-2">Waiting Customers</h4>
+            <div class="scroll-area bg-gray-100 p-2 rounded max-h-[220px] overflow-y-auto" id="customer-list"></div>
+        </div>
+        <h4 class="font-semibold text-sm mt-2 mb-0">Drivers</h4>
+        <div id="driver-panel" class="grid gap-3 bg-white rounded-lg max-h-[45vh] overflow-y-auto p-2"></div>
+    </div>
+
+    <div id="map" class="absolute h-full w-full z-0"></div>
+    <script type="module" src="static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: ridesync_web
+
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./graph:/app/graph
+
+    working_dir: /app
+
+    restart: unless-stopped
