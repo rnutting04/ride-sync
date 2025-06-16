@@ -770,8 +770,7 @@ func setGrid(w http.ResponseWriter, r *http.Request) {
 
 	if !driversInitialized {
 		driverList = []Driver{}
-		names := []string{"Foe"}
-		// "Joe","Poe", "Doe", "Bow", "Crow", "Low", "Bro", "Flow", "Row", "Glo", "Oh"}
+		names := []string{"Foe", "Joe","Poe", "Doe", "Bow", "Crow", "Low", "Bro", "Flow", "Row", "Glo", "Oh"}
 		nodeKeys := make([]string, 0, len(graph))
 		for k := range graph {
 			nodeKeys = append(nodeKeys, k)
