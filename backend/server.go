@@ -854,7 +854,7 @@ func getGraphPath(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	loadGraph("graph/graph.json")
+	loadGraph("../graph/graph.json")
 	// err := loadGraphData()
 	// if err != nil {
 	// 	log.Fatal("Failed to load graph:", err)
