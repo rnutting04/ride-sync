@@ -12,6 +12,7 @@ RUN go mod download
 # Copy the rest of the source code
 COPY backend/ .
 
+
 # Build the Go binary
 RUN go build -o server
 
@@ -20,6 +21,7 @@ FROM debian:bookworm-slim
 
 WORKDIR /app
 
+COPY graph/ .
 # Copy binary from builder
 COPY --from=builder /app/backend/server .
 
