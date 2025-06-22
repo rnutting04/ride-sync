@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -22,6 +23,8 @@ type NeighborInfo struct {
 	Distance float64 `json:"distance"`
 	Speed    float64 `json:"speed"` // km/h, optional
 }
+
+var heatmapCounts = map[string]int{}
 
 type GraphNode struct {
 	ID           int                     `json:"id"`
@@ -38,13 +41,12 @@ func loadGraph(filename string) {
 		log.Fatalf("Failed to open graph file: %v", err)
 	}
 	defer file.Close()
+	graph = make(map[string]GraphNode)
 
-	var loaded map[string]GraphNode
-	if err := json.NewDecoder(file).Decode(&loaded); err != nil {
+	if err := json.NewDecoder(file).Decode(&graph); err != nil {
 		log.Fatalf("Failed to load graph: %v", err)
 	}
-
-	graph = loaded
+	log.Printf("Successfully loaded graph with %d nodes\n", len(graph))
 }
 
 type GridObject struct {
@@ -64,23 +66,6 @@ type PathRequest struct {
 	StartY    int            `json:"startY"`
 	EndCordsX int            `json:"endCordsX"`
 	EndCordsY int            `json:"endCordsY"`
-}
-
-type Node struct {
-	X            int
-	Y            int
-	Heuristic    int
-	G            int
-	F            int
-	Parent       *Node
-	Visited      bool
-	IsHazard     bool
-	TrafficLevel int
-}
-
-type Cords struct {
-	X int `json:"x"`
-	Y int `json:"y"`
 }
 
 type Customer struct {
@@ -171,19 +156,6 @@ func enqueue(customer Customer) {
 	queueMutex.Lock()
 	defer queueMutex.Unlock()
 	customerQueue = append(customerQueue, customer)
-}
-
-func get_rand_cords(grid [][]GridObject) (int, int) {
-	for {
-		x := rand.Intn(len(grid))
-		y := rand.Intn(len(grid[0]))
-		tile := grid[x][y]
-
-		// Only spawn on roads or intersections
-		if tile.Type == "road" || tile.Type == "intersection" {
-			return x, y
-		}
-	}
 }
 
 type PathNode struct {
@@ -287,7 +259,6 @@ func getCustomer(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		// Handle preflight requests
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS") // Add allowed methods
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.WriteHeader(http.StatusOK)
@@ -360,43 +331,6 @@ func getCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(custreturn)
 }
 
-func getCords(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method == http.MethodOptions {
-		// Handle preflight requests
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS") // Add allowed methods
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var requestData CordRequest
-
-	err := json.NewDecoder(r.Body).Decode(&requestData)
-	if err != nil {
-		http.Error(w, "Invalid request data", http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Access-Control-Allow-Origin", "*") // Replace with your frontend domain
-	w.WriteHeader(http.StatusOK)
-	cords := Cords{
-		X: 0,
-		Y: 0,
-	}
-
-	cords.X, cords.Y = get_rand_cords(requestData.Grid)
-
-	json.NewEncoder(w).Encode(cords)
-}
-
 func getCustQ(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodOptions {
@@ -444,7 +378,6 @@ func getPairing(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		// Handle preflight requests
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS") // Add allowed methods
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.WriteHeader(http.StatusOK)
@@ -459,7 +392,6 @@ func getPairing(w http.ResponseWriter, r *http.Request) {
 	var requestData PairingRequest
 
 	err := json.NewDecoder(r.Body).Decode(&requestData)
-	fmt.Println(requestData.Drivers)
 	if err != nil {
 		http.Error(w, "Invalid request data", http.StatusBadRequest)
 		return
@@ -537,18 +469,22 @@ func assignCustomer(w http.ResponseWriter, r *http.Request) {
 			driverList[i].HasCustomer = true
 			driverList[i].Customer = req.Customer
 			driverList[i].OnPickupLeg = true
-
 			driverList[i].DestLat = req.Customer.Lat
 			driverList[i].DestLon = req.Customer.Lon
-			driverList[i].GraphPath = aStarGraphCoords(driverList[i].Lat, driverList[i].Lon, req.Customer.Lat, req.Customer.Lon)
+			path := aStarGraphCoords(driverList[i].Lat, driverList[i].Lon, req.Customer.Lat, req.Customer.Lon)
+			driverList[i].GraphPath = path
 			driverList[i].PathIndex = 0
-
 			driver := driverList[i]
 			driverList[i].ETA = estimateETA(driverList[i].GraphPath)
 			json.NewEncoder(w).Encode(driver.GraphPath)
 			fmt.Println(driver.ETA)
+			for _, node := range path {
+				key := fmt.Sprintf("%.5f,%.5f", node.Lat, node.Lon) // Round to reduce duplicates
+				heatmapCounts[key]++
+			}
 			break
 		}
+
 	}
 
 	// ✅ Remove this customer from the queue (if still there)
@@ -706,10 +642,14 @@ func moveDrivers() {
 				if driver.HasCustomer && driver.OnPickupLeg {
 					// Begin drop-off
 					dest := driver.Customer
-					driver.GraphPath = aStarGraphCoords(driver.Lat, driver.Lon, dest.DestinationLat, dest.DestinationLon)
+					path := aStarGraphCoords(driver.Lat, driver.Lon, dest.DestinationLat, dest.DestinationLon)
+					driver.GraphPath = path
 					driver.PathIndex = 0
 					driver.OnPickupLeg = false
-
+					for _, node := range path {
+						key := fmt.Sprintf("%.5f,%.5f", node.Lat, node.Lon) // Round to reduce duplicates
+						heatmapCounts[key]++
+					}
 					fmt.Printf("%s picked up %s — heading to drop-off\n", driver.Name, dest.Name)
 
 				} else if driver.HasCustomer && !driver.OnPickupLeg {
@@ -770,10 +710,16 @@ func setGrid(w http.ResponseWriter, r *http.Request) {
 
 	if !driversInitialized {
 		driverList = []Driver{}
-		names := []string{"Foe", "Joe","Poe", "Doe", "Bow", "Crow", "Low", "Bro", "Flow", "Row", "Glo", "Oh"}
+		names := []string{"Foe", "Joe", "Poe", "Doe", "Bow", "Crow", "Low", "Bro", "Flow", "Row", "Glo", "Oh"}
 		nodeKeys := make([]string, 0, len(graph))
 		for k := range graph {
 			nodeKeys = append(nodeKeys, k)
+		}
+
+		if len(nodeKeys) == 0 {
+			log.Println("❌ Cannot assign start/end keys: graph is empty.")
+			http.Error(w, "Graph data is empty. Cannot assign drivers.", http.StatusInternalServerError)
+			return
 		}
 
 		for _, name := range names {
@@ -852,6 +798,18 @@ func getGraphPath(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(path)
 }
 
+func handleHeatmapData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var heatPoints [][]interface{}
+	for key, count := range heatmapCounts {
+		parts := strings.Split(key, ",")
+		lat, _ := strconv.ParseFloat(parts[0], 64)
+		lon, _ := strconv.ParseFloat(parts[1], 64)
+		heatPoints = append(heatPoints, []interface{}{lat, lon, count})
+	}
+	json.NewEncoder(w).Encode(heatPoints)
+}
+
 func main() {
 	loadGraph("graph/graph.json")
 	// err := loadGraphData()
@@ -861,8 +819,8 @@ func main() {
 	fs := http.FileServer(http.Dir("frontend/"))
 	http.Handle("/", fs)
 	http.HandleFunc("/set-grid", setGrid)
+	http.HandleFunc("/get-heatmap-data", handleHeatmapData)
 	http.HandleFunc("/get-customer", getCustomer)
-	http.HandleFunc("/get-cords", getCords)
 	http.HandleFunc("/get-pairing", getPairing)
 	http.HandleFunc("/get-cust-que", getCustQ)
 	http.HandleFunc("/get-drivers", getDrivers)

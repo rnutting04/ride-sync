@@ -45,6 +45,22 @@ async function main(){
     }
   });
          
+  let heatLayer = null;
+
+  document.getElementById("toggle-heatmap").addEventListener("click", () => {
+    if (heatLayer) {
+      map.removeLayer(heatLayer);
+      heatLayer = null;
+      return;
+    }
+
+    fetch("/get-heatmap-data")
+      .then(res => res.json())
+      .then(data => {
+        heatLayer = L.heatLayer(data, { radius: 25, blur: 15, maxZoom: 18}).addTo(map);
+      });
+  });
+
     
   const custRes = await fetch("/get-cust-que", {
     method: "POST",

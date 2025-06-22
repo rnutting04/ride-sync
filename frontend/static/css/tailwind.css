@@ -22,7 +22,7 @@ body {
   }
   
   .details {
-    @apply text-gray-700 text-sm;
+    @apply text-gray-700 text-xs;
   }
   
   .driver-status {

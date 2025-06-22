@@ -306,7 +306,7 @@ body {
     font-weight: var(--font-weight-semibold, 600);
   }
   .details {
-    font-size: var(--text-sm, 0.875rem);
+    font-size: var(--text-xs, 0.65rem);
     line-height: var(--tw-leading, var(--text-sm--line-height, calc(1.25 / 0.875)));
     color: var(--color-gray-700, oklch(37.3% 0.034 259.733));
   }
@@ -374,6 +374,7 @@ body {
 }
 .floating-notification {
   position: fixed;
+  font-size: 14px;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);

@@ -13,12 +13,13 @@
     <link rel="shortcut icon" href="static/assets/logo.svg" type="image/svg">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <link href="static/css/main.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 
 <body>
-    <div id="floating-notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full shadow-lg font-semibold opacity-0 pointer-events-none z-[9999] hidden"></div>
+    <div id="floating-notification" class="floating-notification"></div>
 
     <!-- Notification Bell + Log -->
     <div id="notification-bell" class="absolute top-4 right-4 cursor-pointer z-[9998]">
@@ -31,6 +32,11 @@
             <ul id="notification-list" class="text-sm"></ul>
         </div>
     </div>
+ 
+    <div id="toggle-heatmap" class="absolute top-4 right-12 cursor-pointer z-[9998]">
+        <img src="static/assets/heat-map.png" alt="Heat Map" class="w-6 h-6">
+    </div>
+
 
    <div id="hamburger" class="hamburger-btn absolute top-[10px] left-[330px] z-[10001] w-[34px] h-[34px] bg-white text-gray-900 rounded-lg cursor-pointer hover:bg-gray-200">
         <svg class = "absolute hamburger top-[5px] left-[5px]" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" focusable="false">
